@@ -17,78 +17,193 @@ router.post("/register", async function(req, res) {
 
 try {
 
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
 
-    // Check if the email already exists
+    // MAKE SURE REQUIRED INFORMATION WAS PROVIDED
+
+    if (!name || !username || !email || !password) {
+
+        return res.status(400).json({
+
+            message:
+                "Name, username, email and password are required."
+
+        });
+
+    }
+
+
+    // CLEAN THE USERNAME
+
+    const cleanUsername = username
+        .trim()
+        .toLowerCase();
+
+
+    // CHECK USERNAME FORMAT
+
+    const usernamePattern = /^[a-z0-9_]{3,30}$/;
+
+
+    if (!usernamePattern.test(cleanUsername)) {
+
+        return res.status(400).json({
+
+            message:
+                "Username must be 3–30 characters and contain only letters, numbers and underscores."
+
+        });
+
+    }
+
+
+    // CHECK IF THE USERNAME ALREADY EXISTS
+
+    const existingUsername = await User.findOne({
+
+        username: cleanUsername
+
+    });
+
+
+    if (existingUsername) {
+
+        return res.status(400).json({
+
+            message:
+                "That username is already taken."
+
+        });
+
+    }
+
+
+    // CLEAN THE EMAIL
+
+    const cleanEmail = email
+        .trim()
+        .toLowerCase();
+
+
+    // CHECK IF THE EMAIL ALREADY EXISTS
 
     const existingUser = await User.findOne({
-        email: email
+
+        email: cleanEmail
+
     });
 
 
     if (existingUser) {
 
         return res.status(400).json({
-            message: "An account with this email already exists."
+
+            message:
+                "An account with this email already exists."
+
         });
 
     }
 
 
-    // Create a 6-digit verification code
+    // CREATE A 6-DIGIT VERIFICATION CODE
 
     const verificationCode = crypto
         .randomInt(100000, 1000000)
         .toString();
 
 
-    // Create the user
+    // CREATE THE USER
 
     const user = new User({
 
-        name: name,
+        name: name.trim(),
 
-        email: email,
+        username: cleanUsername,
+
+        email: cleanEmail,
 
         password: await bcrypt.hash(password, 10),
 
         verificationCode: verificationCode,
 
         verificationCodeExpires: new Date(
+
             Date.now() + 10 * 60 * 1000
+
         )
 
     });
 
 
-    // Save the user to MongoDB
+    // SAVE USER TO MONGODB
 
     await user.save();
 
 
-    // Send verification email
-
-    // We now send:
-    // name + email + verification code
+    // SEND VERIFICATION EMAIL
 
     await sendVerificationEmail(
-        name,
-        email,
+
+        user.name,
+
+        user.email,
+
         verificationCode
+
     );
 
 
     res.json({
-        message: "User registered successfully!"
+
+        message:
+            "User registered successfully!"
+
     });
+
 
 } catch (error) {
 
     console.error(error);
 
+
+    // Handle a MongoDB duplicate username/email
+    // in case two requests arrive at nearly the same time.
+
+    if (error.code === 11000) {
+
+        if (error.keyPattern && error.keyPattern.username) {
+
+            return res.status(400).json({
+
+                message:
+                    "That username is already taken."
+
+            });
+
+        }
+
+
+        if (error.keyPattern && error.keyPattern.email) {
+
+            return res.status(400).json({
+
+                message:
+                    "An account with this email already exists."
+
+            });
+
+        }
+
+    }
+
+
     res.status(500).json({
-        message: "Registration failed."
+
+        message:
+            "Registration failed."
+
     });
 
 }
@@ -106,75 +221,104 @@ try {
     const { email } = req.body;
 
 
-    // Find the user
+    // CLEAN THE EMAIL
+
+    const cleanEmail = email
+        .trim()
+        .toLowerCase();
+
+
+    // FIND THE USER
 
     const user = await User.findOne({
-        email: email
+
+        email: cleanEmail
+
     });
 
 
     if (!user) {
 
         return res.status(404).json({
-            message: "User not found."
+
+            message:
+                "User not found."
+
         });
 
     }
 
 
-    // Check whether the email is already verified
+    // CHECK WHETHER EMAIL IS ALREADY VERIFIED
 
     if (user.isVerified) {
 
         return res.status(400).json({
-            message: "This email is already verified."
+
+            message:
+                "This email is already verified."
+
         });
 
     }
 
 
-    // Generate a new 6-digit code
+    // GENERATE A NEW 6-DIGIT CODE
 
     const verificationCode = crypto
         .randomInt(100000, 1000000)
         .toString();
 
 
-    // Give the new code a 10-minute expiration
+    // GIVE THE NEW CODE A 10-MINUTE EXPIRATION
 
     user.verificationCode = verificationCode;
 
     user.verificationCodeExpires = new Date(
+
         Date.now() + 10 * 60 * 1000
+
     );
 
 
-    // Save the new code
+    // SAVE THE NEW CODE
 
     await user.save();
 
 
-    // Send the new verification email
+    // SEND THE NEW VERIFICATION EMAIL
 
-    // Use the name stored in MongoDB
+    // Use the user's saved name.
 
     await sendVerificationEmail(
+
         user.name,
+
         user.email,
+
         verificationCode
+
     );
 
 
     res.json({
-        message: "A new verification code has been sent."
+
+        message:
+            "A new verification code has been sent."
+
     });
+
 
 } catch (error) {
 
     console.error(error);
 
+
     res.status(500).json({
-        message: "Could not resend verification code."
+
+        message:
+            "Could not resend verification code."
+
     });
 
 }
@@ -192,93 +336,118 @@ try {
     const { email, code } = req.body;
 
 
-    // Find the user
+    // FIND THE USER
 
     const user = await User.findOne({
+
         email: email
+
     });
 
 
     if (!user) {
 
         return res.status(404).json({
-            message: "User not found."
+
+            message:
+                "User not found."
+
         });
 
     }
 
 
-    // Check if the account is already verified
+    // CHECK IF THE ACCOUNT IS ALREADY VERIFIED
 
     if (user.isVerified) {
 
         return res.status(400).json({
-            message: "This email is already verified."
+
+            message:
+                "This email is already verified."
+
         });
 
     }
 
 
-    // Check if a verification code exists
+    // CHECK IF A VERIFICATION CODE EXISTS
 
     if (!user.verificationCode) {
 
         return res.status(400).json({
-            message: "No verification code found."
+
+            message:
+                "No verification code found."
+
         });
 
     }
 
 
-    // Check if the code has expired
+    // CHECK IF THE CODE HAS EXPIRED
 
     if (new Date() > user.verificationCodeExpires) {
 
         return res.status(400).json({
-            message: "Verification code has expired."
+
+            message:
+                "Verification code has expired."
+
         });
 
     }
 
 
-    // Check if the code is correct
+    // CHECK IF THE CODE IS CORRECT
 
     if (code !== user.verificationCode) {
 
         return res.status(400).json({
-            message: "Incorrect verification code."
+
+            message:
+                "Incorrect verification code."
+
         });
 
     }
 
 
-    // Verify the account
+    // VERIFY THE ACCOUNT
 
     user.isVerified = true;
 
 
-    // Delete the used verification code
+    // DELETE THE USED VERIFICATION CODE
 
     user.verificationCode = null;
 
     user.verificationCodeExpires = null;
 
 
-    // Save the changes
+    // SAVE THE CHANGES
 
     await user.save();
 
 
     res.json({
-        message: "Email verified successfully!"
+
+        message:
+            "Email verified successfully!"
+
     });
+
 
 } catch (error) {
 
     console.error(error);
 
+
     res.status(500).json({
-        message: "Verification failed."
+
+        message:
+            "Verification failed."
+
     });
 
 }
