@@ -1,179 +1,73 @@
+javascript
 const express = require("express");
+
 const bcrypt = require("bcryptjs");
+
 const crypto = require("crypto");
+
+const jwt = require("jsonwebtoken");
 
 const User = require("../models/User");
 
 const {
-sendVerificationEmail
+    sendVerificationEmail
 } = require("../services/emailService");
 
 const router = express.Router();
 
-// REGISTER
 
 router.post("/register", async function(req, res) {
 
+    try {
 
-try {
-
-    const { name, username, email, password } = req.body;
-
-
-    // MAKE SURE REQUIRED INFORMATION WAS PROVIDED
-
-    if (!name || !username || !email || !password) {
-
-        return res.status(400).json({
-
-            message:
-                "Name, username, email and password are required."
-
-        });
-
-    }
+        const {
+            name,
+            username,
+            email,
+            password
+        } = req.body;
 
 
-    // CLEAN THE USERNAME
+        if (!name || !username || !email || !password) {
 
-    const cleanUsername = username
-        .trim()
-        .toLowerCase();
+            return res.status(400).json({
 
+                message:
+                    "Name, username, email and password are required."
 
-    // CHECK USERNAME FORMAT
+            });
 
-    const usernamePattern = /^[a-z0-9_]{3,30}$/;
-
-
-    if (!usernamePattern.test(cleanUsername)) {
-
-        return res.status(400).json({
-
-            message:
-                "Username must be 3–30 characters and contain only letters, numbers and underscores."
-
-        });
-
-    }
+        }
 
 
-    // CHECK IF THE USERNAME ALREADY EXISTS
-
-    const existingUsername = await User.findOne({
-
-        username: cleanUsername
-
-    });
+        const cleanUsername = username
+            .trim()
+            .toLowerCase();
 
 
-    if (existingUsername) {
+        const usernamePattern = /^[a-z0-9_]{3,30}$/;
 
-        return res.status(400).json({
 
-            message:
-                "That username is already taken."
+        if (!usernamePattern.test(cleanUsername)) {
+
+            return res.status(400).json({
+
+                message:
+                    "Username must be 3–30 characters and contain only letters, numbers and underscores."
+
+            });
+
+        }
+
+
+        const existingUsername = await User.findOne({
+
+            username: cleanUsername
 
         });
 
-    }
 
-
-    // CLEAN THE EMAIL
-
-    const cleanEmail = email
-        .trim()
-        .toLowerCase();
-
-
-    // CHECK IF THE EMAIL ALREADY EXISTS
-
-    const existingUser = await User.findOne({
-
-        email: cleanEmail
-
-    });
-
-
-    if (existingUser) {
-
-        return res.status(400).json({
-
-            message:
-                "An account with this email already exists."
-
-        });
-
-    }
-
-
-    // CREATE A 6-DIGIT VERIFICATION CODE
-
-    const verificationCode = crypto
-        .randomInt(100000, 1000000)
-        .toString();
-
-
-    // CREATE THE USER
-
-    const user = new User({
-
-        name: name.trim(),
-
-        username: cleanUsername,
-
-        email: cleanEmail,
-
-        password: await bcrypt.hash(password, 10),
-
-        verificationCode: verificationCode,
-
-        verificationCodeExpires: new Date(
-
-            Date.now() + 10 * 60 * 1000
-
-        )
-
-    });
-
-
-    // SAVE USER TO MONGODB
-
-    await user.save();
-
-
-    // SEND VERIFICATION EMAIL
-
-    await sendVerificationEmail(
-
-        user.name,
-
-        user.email,
-
-        verificationCode
-
-    );
-
-
-    res.json({
-
-        message:
-            "User registered successfully!"
-
-    });
-
-
-} catch (error) {
-
-    console.error(error);
-
-
-    // Handle a MongoDB duplicate username/email
-    // in case two requests arrive at nearly the same time.
-
-    if (error.code === 11000) {
-
-        if (error.keyPattern && error.keyPattern.username) {
+        if (existingUsername) {
 
             return res.status(400).json({
 
@@ -185,7 +79,19 @@ try {
         }
 
 
-        if (error.keyPattern && error.keyPattern.email) {
+        const cleanEmail = email
+            .trim()
+            .toLowerCase();
+
+
+        const existingUser = await User.findOne({
+
+            email: cleanEmail
+
+        });
+
+
+        if (existingUser) {
 
             return res.status(400).json({
 
@@ -196,263 +102,467 @@ try {
 
         }
 
+
+        const verificationCode = crypto
+            .randomInt(100000, 1000000)
+            .toString();
+
+
+        const user = new User({
+
+            name: name.trim(),
+
+            username: cleanUsername,
+
+            email: cleanEmail,
+
+            password: await bcrypt.hash(password, 10),
+
+            verificationCode: verificationCode,
+
+            verificationCodeExpires: new Date(
+
+                Date.now() + 10 * 60 * 1000
+
+            )
+
+        });
+
+
+        await user.save();
+
+
+        await sendVerificationEmail(
+
+            user.name,
+
+            user.email,
+
+            verificationCode
+
+        );
+
+
+        res.json({
+
+            message:
+                "User registered successfully!"
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        if (error.code === 11000) {
+
+            if (
+                error.keyPattern &&
+                error.keyPattern.username
+            ) {
+
+                return res.status(400).json({
+
+                    message:
+                        "That username is already taken."
+
+                });
+
+            }
+
+
+            if (
+                error.keyPattern &&
+                error.keyPattern.email
+            ) {
+
+                return res.status(400).json({
+
+                    message:
+                        "An account with this email already exists."
+
+                });
+
+            }
+
+        }
+
+
+        res.status(500).json({
+
+            message:
+                "Registration failed."
+
+        });
+
     }
-
-
-    res.status(500).json({
-
-        message:
-            "Registration failed."
-
-    });
-
-}
-
 
 });
 
-// RESEND VERIFICATION CODE
 
 router.post("/resend-verification", async function(req, res) {
 
+    try {
 
-try {
-
-    const { email } = req.body;
-
-
-    // CLEAN THE EMAIL
-
-    const cleanEmail = email
-        .trim()
-        .toLowerCase();
+        const { email } = req.body;
 
 
-    // FIND THE USER
-
-    const user = await User.findOne({
-
-        email: cleanEmail
-
-    });
+        const cleanEmail = email
+            .trim()
+            .toLowerCase();
 
 
-    if (!user) {
+        const user = await User.findOne({
 
-        return res.status(404).json({
+            email: cleanEmail
+
+        });
+
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                message:
+                    "User not found."
+
+            });
+
+        }
+
+
+        if (user.isVerified) {
+
+            return res.status(400).json({
+
+                message:
+                    "This email is already verified."
+
+            });
+
+        }
+
+
+        const verificationCode = crypto
+            .randomInt(100000, 1000000)
+            .toString();
+
+
+        user.verificationCode = verificationCode;
+
+        user.verificationCodeExpires = new Date(
+
+            Date.now() + 10 * 60 * 1000
+
+        );
+
+
+        await user.save();
+
+
+        await sendVerificationEmail(
+
+            user.name,
+
+            user.email,
+
+            verificationCode
+
+        );
+
+
+        res.json({
 
             message:
-                "User not found."
+                "A new verification code has been sent."
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        res.status(500).json({
+
+            message:
+                "Could not resend verification code."
 
         });
 
     }
-
-
-    // CHECK WHETHER EMAIL IS ALREADY VERIFIED
-
-    if (user.isVerified) {
-
-        return res.status(400).json({
-
-            message:
-                "This email is already verified."
-
-        });
-
-    }
-
-
-    // GENERATE A NEW 6-DIGIT CODE
-
-    const verificationCode = crypto
-        .randomInt(100000, 1000000)
-        .toString();
-
-
-    // GIVE THE NEW CODE A 10-MINUTE EXPIRATION
-
-    user.verificationCode = verificationCode;
-
-    user.verificationCodeExpires = new Date(
-
-        Date.now() + 10 * 60 * 1000
-
-    );
-
-
-    // SAVE THE NEW CODE
-
-    await user.save();
-
-
-    // SEND THE NEW VERIFICATION EMAIL
-
-    // Use the user's saved name.
-
-    await sendVerificationEmail(
-
-        user.name,
-
-        user.email,
-
-        verificationCode
-
-    );
-
-
-    res.json({
-
-        message:
-            "A new verification code has been sent."
-
-    });
-
-
-} catch (error) {
-
-    console.error(error);
-
-
-    res.status(500).json({
-
-        message:
-            "Could not resend verification code."
-
-    });
-
-}
-
 
 });
 
-// VERIFY EMAIL
 
 router.post("/verify", async function(req, res) {
 
+    try {
 
-try {
-
-    const { email, code } = req.body;
-
-
-    // FIND THE USER
-
-    const user = await User.findOne({
-
-        email: email
-
-    });
+        const {
+            email,
+            code
+        } = req.body;
 
 
-    if (!user) {
+        const cleanEmail = email
+            .trim()
+            .toLowerCase();
 
-        return res.status(404).json({
+
+        const user = await User.findOne({
+
+            email: cleanEmail
+
+        });
+
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                message:
+                    "User not found."
+
+            });
+
+        }
+
+
+        if (user.isVerified) {
+
+            return res.status(400).json({
+
+                message:
+                    "This email is already verified."
+
+            });
+
+        }
+
+
+        if (!user.verificationCode) {
+
+            return res.status(400).json({
+
+                message:
+                    "No verification code found."
+
+            });
+
+        }
+
+
+        if (new Date() > user.verificationCodeExpires) {
+
+            return res.status(400).json({
+
+                message:
+                    "Verification code has expired."
+
+            });
+
+        }
+
+
+        if (code !== user.verificationCode) {
+
+            return res.status(400).json({
+
+                message:
+                    "Incorrect verification code."
+
+            });
+
+        }
+
+
+        user.isVerified = true;
+
+        user.verificationCode = null;
+
+        user.verificationCodeExpires = null;
+
+
+        await user.save();
+
+
+        res.json({
 
             message:
-                "User not found."
+                "Email verified successfully!"
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        res.status(500).json({
+
+            message:
+                "Verification failed."
 
         });
 
     }
-
-
-    // CHECK IF THE ACCOUNT IS ALREADY VERIFIED
-
-    if (user.isVerified) {
-
-        return res.status(400).json({
-
-            message:
-                "This email is already verified."
-
-        });
-
-    }
-
-
-    // CHECK IF A VERIFICATION CODE EXISTS
-
-    if (!user.verificationCode) {
-
-        return res.status(400).json({
-
-            message:
-                "No verification code found."
-
-        });
-
-    }
-
-
-    // CHECK IF THE CODE HAS EXPIRED
-
-    if (new Date() > user.verificationCodeExpires) {
-
-        return res.status(400).json({
-
-            message:
-                "Verification code has expired."
-
-        });
-
-    }
-
-
-    // CHECK IF THE CODE IS CORRECT
-
-    if (code !== user.verificationCode) {
-
-        return res.status(400).json({
-
-            message:
-                "Incorrect verification code."
-
-        });
-
-    }
-
-
-    // VERIFY THE ACCOUNT
-
-    user.isVerified = true;
-
-
-    // DELETE THE USED VERIFICATION CODE
-
-    user.verificationCode = null;
-
-    user.verificationCodeExpires = null;
-
-
-    // SAVE THE CHANGES
-
-    await user.save();
-
-
-    res.json({
-
-        message:
-            "Email verified successfully!"
-
-    });
-
-
-} catch (error) {
-
-    console.error(error);
-
-
-    res.status(500).json({
-
-        message:
-            "Verification failed."
-
-    });
-
-}
-
 
 });
 
+
+router.post("/login", async function(req, res) {
+
+    try {
+
+        const {
+            login,
+            password
+        } = req.body;
+
+
+        if (!login || !password) {
+
+            return res.status(400).json({
+
+                message:
+                    "Email or username and password are required."
+
+            });
+
+        }
+
+
+        const cleanLogin = login
+            .trim()
+            .toLowerCase();
+
+
+        const user = await User.findOne({
+
+            $or: [
+
+                {
+                    email: cleanLogin
+                },
+
+                {
+                    username: cleanLogin
+                }
+
+            ]
+
+        });
+
+
+        if (!user) {
+
+            return res.status(401).json({
+
+                message:
+                    "Invalid email, username or password."
+
+            });
+
+        }
+
+
+        if (!user.isVerified) {
+
+            return res.status(403).json({
+
+                message:
+                    "Please verify your email before logging in."
+
+            });
+
+        }
+
+
+        const passwordMatches = await bcrypt.compare(
+
+            password,
+
+            user.password
+
+        );
+
+
+        if (!passwordMatches) {
+
+            return res.status(401).json({
+
+                message:
+                    "Invalid email, username or password."
+
+            });
+
+        }
+
+
+        const token = jwt.sign(
+
+            {
+                userId: user._id
+            },
+
+            process.env.JWT_SECRET,
+
+            {
+                expiresIn: "7d"
+            }
+
+        );
+
+
+        res.json({
+
+            message:
+                "Login successful.",
+
+            token: token,
+
+            user: {
+
+                id: user._id,
+
+                name: user.name,
+
+                username: user.username,
+
+                email: user.email
+
+            }
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        res.status(500).json({
+
+            message:
+                "Login failed."
+
+        });
+
+    }
+
+});
+
+
 module.exports = router;
+
+
+
+
+
+
+
