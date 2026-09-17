@@ -2,36 +2,97 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
 
-    name: {
-        type: String,
-        required: true
-    },
 
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    },
+// DISPLAY NAME
+// This can contain spaces and is not unique.
 
-    password: {
-        type: String,
-        required: true
-    },
+name: {
 
-    isVerified: {
-        type: Boolean,
-        default: false
-    },
+    type: String,
 
-    verificationCode: {
-        type: String,
-        default: null
-    },
+    required: true,
 
-    verificationCodeExpires: {
-        type: Date,
-        default: null
-    }
+    trim: true
+
+},
+
+
+// USERNAME
+// This must be unique.
+// Only lowercase letters, numbers, and underscores
+// will be allowed by our registration validation.
+
+username: {
+
+    type: String,
+
+    required: true,
+
+    unique: true,
+
+    lowercase: true,
+
+    trim: true
+
+},
+
+
+// EMAIL
+
+email: {
+
+    type: String,
+
+    required: true,
+
+    unique: true,
+
+    lowercase: true,
+
+    trim: true
+
+},
+
+
+// PASSWORD
+
+password: {
+
+    type: String,
+
+    required: true
+
+},
+
+
+// EMAIL VERIFICATION
+
+isVerified: {
+
+    type: Boolean,
+
+    default: false
+
+},
+
+
+verificationCode: {
+
+    type: String,
+
+    default: null
+
+},
+
+
+verificationCodeExpires: {
+
+    type: Date,
+
+    default: null
+
+}
+
 
 });
 
