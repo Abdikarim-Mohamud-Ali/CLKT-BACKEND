@@ -1,5 +1,4 @@
 
-
 const express = require("express");
 
 const bcrypt = require("bcryptjs");
@@ -208,17 +207,39 @@ router.post("/resend-verification", async function(req, res) {
 
     try {
 
-        const { email } = req.body;
+        const { login } = req.body;
 
 
-        const cleanEmail = email
+        if (!login) {
+
+            return res.status(400).json({
+
+                message:
+                    "Email or username is required."
+
+            });
+
+        }
+
+
+        const cleanLogin = login
             .trim()
             .toLowerCase();
 
 
         const user = await User.findOne({
 
-            email: cleanEmail
+            $or: [
+
+                {
+                    email: cleanLogin
+                },
+
+                {
+                    username: cleanLogin
+                }
+
+            ]
 
         });
 
@@ -305,19 +326,41 @@ router.post("/verify", async function(req, res) {
     try {
 
         const {
-            email,
+            login,
             code
         } = req.body;
 
 
-        const cleanEmail = email
+        if (!login || !code) {
+
+            return res.status(400).json({
+
+                message:
+                    "Email or username and verification code are required."
+
+            });
+
+        }
+
+
+        const cleanLogin = login
             .trim()
             .toLowerCase();
 
 
         const user = await User.findOne({
 
-            email: cleanEmail
+            $or: [
+
+                {
+                    email: cleanLogin
+                },
+
+                {
+                    username: cleanLogin
+                }
+
+            ]
 
         });
 
