@@ -1,4 +1,5 @@
 
+javascript
 const express = require("express");
 
 const bcrypt = require("bcryptjs");
@@ -10,7 +11,8 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 const {
-    sendVerificationEmail
+    sendVerificationEmail,
+    sendPasswordResetEmail
 } = require("../services/emailService");
 
 const router = express.Router();
@@ -415,6 +417,147 @@ router.post("/verify", async function(req, res) {
 });
 
 
+router.post("/forgot-password", async function(req, res) {
+
+    try {
+
+        const { login } = req.body;
+
+
+        if (!login) {
+
+            return res.status(400).json({
+
+                message:
+                    "Email or username is required."
+
+            });
+
+        }
+
+
+        const cleanLogin = login
+            .trim()
+            .toLowerCase();
+
+
+        const user = await User.findOne({
+
+            $or: [
+
+                {
+                    email: cleanLogin
+                },
+
+                {
+                    username: cleanLogin
+                }
+
+            ]
+
+        });
+
+
+        if (!user) {
+
+            return res.json({
+
+                message:
+                    "If an account matches those details, a password reset code has been sent."
+
+            });
+
+        }
+
+
+        const passwordResetCode = crypto
+            .randomInt(100000, 1000000)
+            .toString();
+
+
+        user.passwordResetCode = passwordResetCode;
+
+        user.passwordResetCodeExpires = new Date(
+
+            Date.now() + 10 * 60 * 1000
+
+        );
+
+
+        await user.save();
+
+
+        await sendPasswordResetEmail(
+
+            user.name,
+
+            user.email,
+
+            passwordResetCode
+
+        );
+
+
+        const emailParts = user.email.split("@");
+
+        const localPart = emailParts[0];
+
+        const domain = emailParts[1];
+
+
+        let maskedLocalPart;
+
+
+        if (localPart.length === 1) {
+
+            maskedLocalPart = localPart + "••••";
+
+        } else if (localPart.length === 2) {
+
+            maskedLocalPart =
+                localPart[0] + "•";
+
+        } else {
+
+            maskedLocalPart =
+                localPart[0] +
+                "•".repeat(localPart.length - 2) +
+                localPart[localPart.length - 1];
+
+        }
+
+
+        const maskedEmail =
+            maskedLocalPart + "@" + domain;
+
+
+        res.json({
+
+            message:
+                "A password reset code has been sent.",
+
+            maskedEmail: maskedEmail
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        res.status(500).json({
+
+            message:
+                "Could not send password reset code."
+
+        });
+
+    }
+
+});
+
+
 router.post("/login", async function(req, res) {
 
     try {
@@ -513,7 +656,9 @@ router.post("/login", async function(req, res) {
             process.env.JWT_SECRET,
 
             {
+
                 expiresIn: "7d"
+
             }
 
         );
@@ -559,10 +704,4 @@ router.post("/login", async function(req, res) {
 
 
 module.exports = router;
-
-
-
-
-
-
 
