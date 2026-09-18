@@ -1,101 +1,129 @@
+javascript
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
 
 
-// DISPLAY NAME
-// This can contain spaces and is not unique.
+    // DISPLAY NAME
 
-name: {
+    // This can contain spaces and is not unique.
 
-    type: String,
+    name: {
 
-    required: true,
+        type: String,
 
-    trim: true
+        required: true,
 
-},
+        trim: true
 
-
-// USERNAME
-// This must be unique.
-// Only lowercase letters, numbers, and underscores
-// will be allowed by our registration validation.
-
-username: {
-
-    type: String,
-
-    required: true,
-
-    unique: true,
-
-    lowercase: true,
-
-    trim: true
-
-},
+    },
 
 
-// EMAIL
+    // USERNAME
 
-email: {
+    // This must be unique.
 
-    type: String,
+    // Only lowercase letters, numbers, and underscores
 
-    required: true,
+    // will be allowed by our registration validation.
 
-    unique: true,
+    username: {
 
-    lowercase: true,
+        type: String,
 
-    trim: true
+        required: true,
 
-},
+        unique: true,
 
+        lowercase: true,
 
-// PASSWORD
+        trim: true
 
-password: {
-
-    type: String,
-
-    required: true
-
-},
+    },
 
 
-// EMAIL VERIFICATION
+    // EMAIL
 
-isVerified: {
+    email: {
 
-    type: Boolean,
+        type: String,
 
-    default: false
+        required: true,
 
-},
+        unique: true,
 
+        lowercase: true,
 
-verificationCode: {
+        trim: true
 
-    type: String,
-
-    default: null
-
-},
+    },
 
 
-verificationCodeExpires: {
+    // PASSWORD
 
-    type: Date,
+    password: {
 
-    default: null
+        type: String,
 
-}
+        required: true
+
+    },
+
+
+    // EMAIL VERIFICATION
+
+    isVerified: {
+
+        type: Boolean,
+
+        default: false
+
+    },
+
+
+    verificationCode: {
+
+        type: String,
+
+        default: null
+
+    },
+
+
+    verificationCodeExpires: {
+
+        type: Date,
+
+        default: null
+
+    },
+
+
+    // PASSWORD RESET
+
+    passwordResetCode: {
+
+        type: String,
+
+        default: null
+
+    },
+
+
+    passwordResetCodeExpires: {
+
+        type: Date,
+
+        default: null
+
+    }
 
 
 });
 
+
 const User = mongoose.model("User", userSchema);
 
+
 module.exports = User;
+
