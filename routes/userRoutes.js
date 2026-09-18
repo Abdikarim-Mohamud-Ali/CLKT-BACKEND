@@ -1,4 +1,5 @@
 
+
 const express = require("express");
 
 const bcrypt = require("bcryptjs");
@@ -562,6 +563,138 @@ router.post("/forgot-password", async function(req, res) {
 });
 
 
+router.post("/verify-reset-code", async function(req, res) {
+
+    try {
+
+        const {
+            login,
+            code
+        } = req.body;
+
+
+        if (!login || !code) {
+
+            return res.status(400).json({
+
+                message:
+                    "Login and verification code are required."
+
+            });
+
+        }
+
+
+        if (!/^\d{6}$/.test(code)) {
+
+            return res.status(400).json({
+
+                message:
+                    "Verification code must be 6 digits."
+
+            });
+
+        }
+
+
+        const cleanLogin = login
+            .trim()
+            .toLowerCase();
+
+
+        const user = await User.findOne({
+
+            $or: [
+
+                {
+                    email: cleanLogin
+                },
+
+                {
+                    username: cleanLogin
+                }
+
+            ]
+
+        });
+
+
+        if (!user) {
+
+            return res.status(400).json({
+
+                message:
+                    "Invalid password reset request."
+
+            });
+
+        }
+
+
+        if (!user.passwordResetCode) {
+
+            return res.status(400).json({
+
+                message:
+                    "No password reset code found."
+
+            });
+
+        }
+
+
+        if (
+            !user.passwordResetCodeExpires ||
+            new Date() > user.passwordResetCodeExpires
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "Password reset code has expired."
+
+            });
+
+        }
+
+
+        if (code !== user.passwordResetCode) {
+
+            return res.status(400).json({
+
+                message:
+                    "Incorrect password reset code."
+
+            });
+
+        }
+
+
+        res.json({
+
+            message:
+                "Verification code is correct."
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        res.status(500).json({
+
+            message:
+                "Could not verify password reset code."
+
+        });
+
+    }
+
+});
+
+
 router.post("/reset-password", async function(req, res) {
 
     try {
@@ -856,7 +989,6 @@ router.post("/login", async function(req, res) {
 
         });
 
-
     } catch (error) {
 
         console.error(error);
@@ -875,6 +1007,4 @@ router.post("/login", async function(req, res) {
 
 
 module.exports = router;
-
-
 
