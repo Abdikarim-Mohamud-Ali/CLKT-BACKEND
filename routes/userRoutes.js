@@ -1,5 +1,4 @@
 
-
 const express = require("express");
 
 const bcrypt = require("bcryptjs");
@@ -358,7 +357,10 @@ router.post("/verify", async function(req, res) {
         }
 
 
-        if (new Date() > user.verificationCodeExpires) {
+        if (
+            !user.verificationCodeExpires ||
+            new Date() > user.verificationCodeExpires
+        ) {
 
             return res.status(400).json({
 
@@ -510,7 +512,8 @@ router.post("/forgot-password", async function(req, res) {
 
         if (localPart.length === 1) {
 
-            maskedLocalPart = localPart + "••••";
+            maskedLocalPart =
+                localPart + "••••";
 
         } else if (localPart.length === 2) {
 
@@ -536,7 +539,8 @@ router.post("/forgot-password", async function(req, res) {
             message:
                 "A password reset code has been sent.",
 
-            maskedEmail: maskedEmail
+            maskedEmail:
+                maskedEmail
 
         });
 
@@ -550,6 +554,168 @@ router.post("/forgot-password", async function(req, res) {
 
             message:
                 "Could not send password reset code."
+
+        });
+
+    }
+
+});
+
+
+router.post("/reset-password", async function(req, res) {
+
+    try {
+
+        const {
+            login,
+            code,
+            newPassword
+        } = req.body;
+
+
+        if (!login || !code || !newPassword) {
+
+            return res.status(400).json({
+
+                message:
+                    "Login, verification code and new password are required."
+
+            });
+
+        }
+
+
+        if (!/^\d{6}$/.test(code)) {
+
+            return res.status(400).json({
+
+                message:
+                    "Verification code must be 6 digits."
+
+            });
+
+        }
+
+
+        if (newPassword.length < 8) {
+
+            return res.status(400).json({
+
+                message:
+                    "Password must be at least 8 characters."
+
+            });
+
+        }
+
+
+        const cleanLogin = login
+            .trim()
+            .toLowerCase();
+
+
+        const user = await User.findOne({
+
+            $or: [
+
+                {
+                    email: cleanLogin
+                },
+
+                {
+                    username: cleanLogin
+                }
+
+            ]
+
+        });
+
+
+        if (!user) {
+
+            return res.status(400).json({
+
+                message:
+                    "Invalid password reset request."
+
+            });
+
+        }
+
+
+        if (!user.passwordResetCode) {
+
+            return res.status(400).json({
+
+                message:
+                    "No password reset code found."
+
+            });
+
+        }
+
+
+        if (
+            !user.passwordResetCodeExpires ||
+            new Date() > user.passwordResetCodeExpires
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "Password reset code has expired."
+
+            });
+
+        }
+
+
+        if (code !== user.passwordResetCode) {
+
+            return res.status(400).json({
+
+                message:
+                    "Incorrect password reset code."
+
+            });
+
+        }
+
+
+        user.password = await bcrypt.hash(
+
+            newPassword,
+
+            10
+
+        );
+
+
+        user.passwordResetCode = null;
+
+        user.passwordResetCodeExpires = null;
+
+
+        await user.save();
+
+
+        res.json({
+
+            message:
+                "Password reset successfully."
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        res.status(500).json({
+
+            message:
+                "Could not reset password."
 
         });
 
@@ -669,17 +835,22 @@ router.post("/login", async function(req, res) {
             message:
                 "Login successful.",
 
-            token: token,
+            token:
+                token,
 
             user: {
 
-                id: user._id,
+                id:
+                    user._id,
 
-                name: user.name,
+                name:
+                    user.name,
 
-                username: user.username,
+                username:
+                    user.username,
 
-                email: user.email
+                email:
+                    user.email
 
             }
 
@@ -704,4 +875,6 @@ router.post("/login", async function(req, res) {
 
 
 module.exports = router;
+
+
 
