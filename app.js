@@ -1,223 +1,104 @@
-/* =========================================================
-   CLKT.COM
-   Main JavaScript
-   Logged-in User + Voice Recorder
-   ========================================================= */
+// =====================================================
+// CLKT.COM FRONTEND APP
+// =====================================================
 
+// =====================================================
+// LOGGED-IN USER
+// =====================================================
 
-/* =========================================================
-   1. GET LOGGED-IN USER
-   ========================================================= */
-
-const token =
-    localStorage.getItem("clktToken");
-
-const storedUser =
-    localStorage.getItem("clktUser");
-
-
-/*
-    If there is no login token or user information,
-    send the visitor back to the login page.
-*/
-
-if (!token || !storedUser) {
-
-    window.location.href =
-        "login.html";
-
-}
-
-
-/* =========================================================
-   2. CONVERT SAVED USER DATA INTO JAVASCRIPT OBJECT
-   ========================================================= */
+const token = localStorage.getItem("clktToken");
 
 let currentUser = null;
 
-
 try {
 
-    currentUser =
-        JSON.parse(storedUser);
+    const savedUser = localStorage.getItem("clktUser");
 
-}
-catch (error) {
+    if (savedUser) {
+
+        currentUser = JSON.parse(savedUser);
+
+    }
+
+} catch (error) {
 
     console.error(
-        "Could not read saved CLKT user:",
+        "Could not read saved user:",
         error
     );
 
-    localStorage.removeItem("clktToken");
-    localStorage.removeItem("clktUser");
-
-    window.location.href =
-        "login.html";
-
 }
 
 
-/* =========================================================
-   3. GET PROFILE ELEMENTS
-   ========================================================= */
+// =====================================================
+// PROFILE INFORMATION
+// =====================================================
 
-const sidebarProfilePicture =
-    document.getElementById(
-        "sidebarProfilePicture"
-    );
-
-const sidebarProfileName =
-    document.getElementById(
-        "sidebarProfileName"
-    );
-
-const sidebarProfileUsername =
-    document.getElementById(
-        "sidebarProfileUsername"
-    );
-
-const createPostProfilePicture =
-    document.getElementById(
-        "createPostProfilePicture"
-    );
-
-
-/* =========================================================
-   4. DISPLAY LOGGED-IN USER
-   ========================================================= */
+const profileName = document.getElementById("profileName");
+const profileUsername = document.getElementById("profileUsername");
 
 if (currentUser) {
 
-    /*
-        Get the first letter of the user's name.
+    if (profileName) {
 
-        Example:
-
-        Abdikarim
-        becomes:
-
-        A
-    */
-
-    const firstLetter =
-        currentUser.name
-            ? currentUser.name
-                .charAt(0)
-                .toUpperCase()
-            : "U";
-
-
-    /*
-        Display the user's real name.
-    */
-
-    if (sidebarProfileName) {
-
-        sidebarProfileName.textContent =
-            currentUser.name;
+        profileName.textContent =
+            currentUser.name || "CLKT User";
 
     }
 
+    if (profileUsername) {
 
-    /*
-        Display the user's real username.
-    */
-
-    if (sidebarProfileUsername) {
-
-        sidebarProfileUsername.textContent =
-            "@" + currentUser.username;
-
-    }
-
-
-    /*
-        Display the user's first letter
-        inside the profile picture.
-    */
-
-    if (sidebarProfilePicture) {
-
-        sidebarProfilePicture.textContent =
-            firstLetter;
-
-    }
-
-
-    if (createPostProfilePicture) {
-
-        createPostProfilePicture.textContent =
-            firstLetter;
+        profileUsername.textContent =
+            currentUser.username
+                ? "@" + currentUser.username
+                : "";
 
     }
 
 }
 
 
-/* =========================================================
-   5. GET VOICE RECORDER ELEMENTS
-   ========================================================= */
+// =====================================================
+// VOICE RECORDER ELEMENTS
+// =====================================================
 
 const voiceInputButton =
-    document.getElementById(
-        "voiceInputButton"
-    );
+    document.getElementById("voiceInputButton");
 
 const quickVoiceButton =
-    document.getElementById(
-        "quickVoiceButton"
-    );
+    document.getElementById("quickVoiceButton");
 
 const mobileVoiceButton =
-    document.getElementById(
-        "mobileVoiceButton"
-    );
+    document.getElementById("mobileVoiceButton");
 
 const voiceRecorder =
-    document.getElementById(
-        "voiceRecorder"
-    );
+    document.getElementById("voiceRecorder");
 
 const startRecordingButton =
-    document.getElementById(
-        "startRecordingButton"
-    );
+    document.getElementById("startRecordingButton");
 
 const stopRecordingButton =
-    document.getElementById(
-        "stopRecordingButton"
-    );
+    document.getElementById("stopRecordingButton");
 
 const recordingDot =
-    document.getElementById(
-        "recordingDot"
-    );
+    document.getElementById("recordingDot");
 
 const recordingText =
-    document.getElementById(
-        "recordingText"
-    );
+    document.getElementById("recordingText");
 
 const recordingTime =
-    document.getElementById(
-        "recordingTime"
-    );
+    document.getElementById("recordingTime");
 
 const audioPreview =
-    document.getElementById(
-        "audioPreview"
-    );
+    document.getElementById("audioPreview");
 
 const publishVoiceButton =
-    document.getElementById(
-        "publishVoiceButton"
-    );
+    document.getElementById("publishVoiceButton");
 
 
-/* =========================================================
-   6. RECORDING VARIABLES
-   ========================================================= */
+// =====================================================
+// RECORDING VARIABLES
+// =====================================================
 
 let mediaRecorder = null;
 
@@ -234,43 +115,32 @@ let recordingSeconds = 0;
 let microphoneStream = null;
 
 
-/* =========================================================
-   7. OPEN VOICE RECORDER
-   ========================================================= */
+// =====================================================
+// OPEN VOICE RECORDER
+// =====================================================
 
 function openVoiceRecorder() {
 
     if (!voiceRecorder) {
+
+        console.error(
+            "Voice recorder element was not found."
+        );
+
         return;
+
     }
 
-
-    voiceRecorder.classList.remove(
-        "hidden"
-    );
-
-
-    voiceRecorder.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
+    voiceRecorder.style.display = "block";
 
 }
 
-
-/* =========================================================
-   8. CONNECT VOICE BUTTONS
-   ========================================================= */
 
 if (voiceInputButton) {
 
     voiceInputButton.addEventListener(
         "click",
-        function() {
-
-            openVoiceRecorder();
-
-        }
+        openVoiceRecorder
     );
 
 }
@@ -280,11 +150,7 @@ if (quickVoiceButton) {
 
     quickVoiceButton.addEventListener(
         "click",
-        function() {
-
-            openVoiceRecorder();
-
-        }
+        openVoiceRecorder
     );
 
 }
@@ -294,19 +160,15 @@ if (mobileVoiceButton) {
 
     mobileVoiceButton.addEventListener(
         "click",
-        function() {
-
-            openVoiceRecorder();
-
-        }
+        openVoiceRecorder
     );
 
 }
 
 
-/* =========================================================
-   9. START RECORDING
-   ========================================================= */
+// =====================================================
+// START RECORDING
+// =====================================================
 
 if (startRecordingButton) {
 
@@ -314,307 +176,257 @@ if (startRecordingButton) {
         "click",
         async function() {
 
-
-            /*
-                Ask the browser for microphone permission.
-            */
-
             try {
 
+                console.log(
+                    "Requesting microphone permission..."
+                );
+
                 microphoneStream =
-                    await navigator.mediaDevices
-                        .getUserMedia({
-                            audio: true
-                        });
+                    await navigator.mediaDevices.getUserMedia({
+                        audio: true
+                    });
 
-            }
-            catch (error) {
-
-                console.error(
-                    "Microphone permission error:",
-                    error
-                );
-
-                recordingText.textContent =
-                    "Microphone permission denied.";
-
-                return;
-
-            }
-
-
-            /* ---------------------------------------------
-               RESET PREVIOUS RECORDING
-               --------------------------------------------- */
-
-            audioChunks = [];
-
-            audioBlob = null;
-
-
-            if (audioPreview) {
-
-                audioPreview.innerHTML = "";
-
-            }
-
-
-            if (publishVoiceButton) {
-
-                publishVoiceButton.disabled =
-                    true;
-
-            }
-
-
-            /* ---------------------------------------------
-               CREATE MEDIA RECORDER
-               --------------------------------------------- */
-
-            mediaRecorder =
-                new MediaRecorder(
-                    microphoneStream
+                console.log(
+                    "Microphone permission granted."
                 );
 
 
-            /* ---------------------------------------------
-               RECEIVE AUDIO DATA
-               --------------------------------------------- */
+                audioChunks = [];
 
-            mediaRecorder.addEventListener(
-                "dataavailable",
-                function(event) {
+                audioBlob = null;
 
-                    if (event.data.size > 0) {
 
-                        audioChunks.push(
-                            event.data
-                        );
+                mediaRecorder =
+                    new MediaRecorder(
+                        microphoneStream
+                    );
+
+
+                mediaRecorder.addEventListener(
+                    "dataavailable",
+                    function(event) {
+
+                        if (event.data.size > 0) {
+
+                            audioChunks.push(
+                                event.data
+                            );
+
+                        }
 
                     }
-
-                }
-            );
+                );
 
 
-            /* ---------------------------------------------
-               WHEN RECORDING STOPS
-               --------------------------------------------- */
+                mediaRecorder.addEventListener(
+                    "stop",
+                    function() {
 
-            mediaRecorder.addEventListener(
-                "stop",
-                function() {
-
-
-                    /*
-                        Combine all recorded audio pieces
-                        into one audio file.
-                    */
-
-                    audioBlob =
-                        new Blob(
-                            audioChunks,
-                            {
-                                type: "audio/webm"
-                            }
+                        console.log(
+                            "Recording stopped."
                         );
 
 
-                    /* -------------------------------------
-                       CREATE TEMPORARY PLAYBACK URL
-                       ------------------------------------- */
+                        audioBlob =
+                            new Blob(
+                                audioChunks,
+                                {
+                                    type:
+                                        mediaRecorder.mimeType ||
+                                        "audio/webm"
+                                }
+                            );
 
-                    audioURL =
-                        URL.createObjectURL(
+
+                        console.log(
+                            "Audio blob created:",
                             audioBlob
                         );
 
 
-                    /* -------------------------------------
-                       CREATE AUDIO PLAYER
-                       ------------------------------------- */
+                        if (audioURL) {
 
-                    const audioPlayer =
-                        document.createElement(
-                            "audio"
-                        );
-
-
-                    audioPlayer.controls =
-                        true;
-
-
-                    audioPlayer.src =
-                        audioURL;
-
-
-                    if (audioPreview) {
-
-                        audioPreview.innerHTML =
-                            "";
-
-                        audioPreview.appendChild(
-                            audioPlayer
-                        );
-
-                    }
-
-
-                    /* -------------------------------------
-                       ENABLE PUBLISH BUTTON
-                       ------------------------------------- */
-
-                    if (publishVoiceButton) {
-
-                        publishVoiceButton.disabled =
-                            false;
-
-                    }
-
-
-                    /* -------------------------------------
-                       UPDATE RECORDING STATUS
-                       ------------------------------------- */
-
-                    if (recordingDot) {
-
-                        recordingDot.classList.remove(
-                            "recording"
-                        );
-
-                    }
-
-
-                    if (recordingText) {
-
-                        recordingText.textContent =
-                            "Recording finished";
-
-                    }
-
-
-                    /* -------------------------------------
-                       RELEASE MICROPHONE
-                       ------------------------------------- */
-
-                    if (microphoneStream) {
-
-                        microphoneStream
-                            .getTracks()
-                            .forEach(
-                                function(track) {
-
-                                    track.stop();
-
-                                }
+                            URL.revokeObjectURL(
+                                audioURL
                             );
-
-                        microphoneStream =
-                            null;
-
-                    }
-
-                }
-            );
-
-
-            /* =================================================
-               START ACTUAL RECORDING
-               ================================================= */
-
-            mediaRecorder.start();
-
-
-            /* ---------------------------------------------
-               UPDATE RECORDING UI
-               --------------------------------------------- */
-
-            if (recordingDot) {
-
-                recordingDot.classList.add(
-                    "recording"
-                );
-
-            }
-
-
-            if (recordingText) {
-
-                recordingText.textContent =
-                    "Recording...";
-
-            }
-
-
-            startRecordingButton.disabled =
-                true;
-
-
-            if (stopRecordingButton) {
-
-                stopRecordingButton.disabled =
-                    false;
-
-            }
-
-
-            /* ---------------------------------------------
-               RESET TIMER
-               --------------------------------------------- */
-
-            recordingSeconds =
-                0;
-
-
-            if (recordingTime) {
-
-                recordingTime.textContent =
-                    "00:00";
-
-            }
-
-
-            /* ---------------------------------------------
-               START TIMER
-               --------------------------------------------- */
-
-            recordingInterval =
-                setInterval(
-                    function() {
-
-                        recordingSeconds++;
-
-
-                        const minutes =
-                            Math.floor(
-                                recordingSeconds / 60
-                            );
-
-
-                        const seconds =
-                            recordingSeconds % 60;
-
-
-                        const formattedMinutes =
-                            String(minutes)
-                                .padStart(2, "0");
-
-
-                        const formattedSeconds =
-                            String(seconds)
-                                .padStart(2, "0");
-
-
-                        if (recordingTime) {
-
-                            recordingTime.textContent =
-                                `${formattedMinutes}:${formattedSeconds}`;
 
                         }
 
-                    },
-                    1000
+
+                        audioURL =
+                            URL.createObjectURL(
+                                audioBlob
+                            );
+
+
+                        if (audioPreview) {
+
+                            audioPreview.innerHTML = "";
+
+
+                            const audio =
+                                document.createElement(
+                                    "audio"
+                                );
+
+
+                            audio.controls = true;
+
+                            audio.src = audioURL;
+
+                            audio.style.width = "100%";
+
+
+                            audioPreview.appendChild(
+                                audio
+                            );
+
+                        }
+
+
+                        if (publishVoiceButton) {
+
+                            publishVoiceButton.disabled =
+                                false;
+
+                        }
+
+
+                        if (recordingText) {
+
+                            recordingText.textContent =
+                                "Recording ready";
+
+                        }
+
+
+                        if (recordingDot) {
+
+                            recordingDot.style.display =
+                                "none";
+
+                        }
+
+
+                        if (microphoneStream) {
+
+                            microphoneStream
+                                .getTracks()
+                                .forEach(
+                                    function(track) {
+
+                                        track.stop();
+
+                                    }
+                                );
+
+                        }
+
+                    }
                 );
+
+
+                mediaRecorder.start();
+
+
+                console.log(
+                    "Recording started."
+                );
+
+
+                recordingSeconds = 0;
+
+
+                if (recordingTime) {
+
+                    recordingTime.textContent =
+                        "00:00";
+
+                }
+
+
+                if (recordingText) {
+
+                    recordingText.textContent =
+                        "Recording...";
+
+                }
+
+
+                if (recordingDot) {
+
+                    recordingDot.style.display =
+                        "block";
+
+                }
+
+
+                startRecordingButton.disabled =
+                    true;
+
+
+                if (stopRecordingButton) {
+
+                    stopRecordingButton.disabled =
+                        false;
+
+                }
+
+
+                if (publishVoiceButton) {
+
+                    publishVoiceButton.disabled =
+                        true;
+
+                }
+
+
+                recordingInterval =
+                    setInterval(
+                        function() {
+
+                            recordingSeconds++;
+
+
+                            const minutes =
+                                Math.floor(
+                                    recordingSeconds / 60
+                                );
+
+                            const seconds =
+                                recordingSeconds % 60;
+
+
+                            if (recordingTime) {
+
+                                recordingTime.textContent =
+                                    String(minutes)
+                                        .padStart(2, "0")
+                                    + ":" +
+                                    String(seconds)
+                                        .padStart(2, "0");
+
+                            }
+
+                        },
+                        1000
+                    );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Microphone error:",
+                    error
+                );
+
+
+                alert(
+                    "Could not access your microphone. Please allow microphone permission and try again."
+                );
+
+            }
 
         }
     );
@@ -622,9 +434,9 @@ if (startRecordingButton) {
 }
 
 
-/* =========================================================
-   10. STOP RECORDING
-   ========================================================= */
+// =====================================================
+// STOP RECORDING
+// =====================================================
 
 if (stopRecordingButton) {
 
@@ -632,10 +444,9 @@ if (stopRecordingButton) {
         "click",
         function() {
 
-
             if (
                 mediaRecorder &&
-                mediaRecorder.state === "recording"
+                mediaRecorder.state !== "inactive"
             ) {
 
                 mediaRecorder.stop();
@@ -643,9 +454,15 @@ if (stopRecordingButton) {
             }
 
 
-            clearInterval(
-                recordingInterval
-            );
+            if (recordingInterval) {
+
+                clearInterval(
+                    recordingInterval
+                );
+
+                recordingInterval = null;
+
+            }
 
 
             if (startRecordingButton) {
@@ -665,29 +482,24 @@ if (stopRecordingButton) {
 }
 
 
-/* =========================================================
-   11. PUBLISH VOICE POST
-   ========================================================= */
+// =====================================================
+// PUBLISH VOICE POST
+// =====================================================
 
 if (publishVoiceButton) {
 
     publishVoiceButton.addEventListener(
         "click",
-        function() {
+        async function() {
 
-
-            /*
-                The audio upload system is not connected
-                to the backend yet.
-
-                For now we only confirm that a recording
-                exists.
-            */
+            // -------------------------------------------------
+            // CHECK RECORDING
+            // -------------------------------------------------
 
             if (!audioBlob) {
 
                 alert(
-                    "Please record something first."
+                    "Please record your voice first."
                 );
 
                 return;
@@ -695,15 +507,321 @@ if (publishVoiceButton) {
             }
 
 
-            alert(
-                "Your voice recording is ready. The real post upload system will be connected next."
-            );
+            // -------------------------------------------------
+            // CHECK LOGGED-IN USER
+            // -------------------------------------------------
+
+            if (!currentUser) {
+
+                alert(
+                    "You must be logged in to publish a post."
+                );
+
+                return;
+
+            }
 
 
-            console.log(
-                "Recorded audio:",
-                audioBlob
-            );
+            const userId =
+                currentUser.id ||
+                currentUser._id;
+
+
+            if (!userId) {
+
+                console.error(
+                    "Current user does not contain an ID:",
+                    currentUser
+                );
+
+
+                alert(
+                    "Could not find your user ID. Please log in again."
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                // -------------------------------------------------
+                // DISABLE BUTTON WHILE UPLOADING
+                // -------------------------------------------------
+
+                publishVoiceButton.disabled =
+                    true;
+
+
+                publishVoiceButton.textContent =
+                    "Uploading...";
+
+
+                console.log(
+                    "Starting Cloudinary upload..."
+                );
+
+
+                // -------------------------------------------------
+                // CREATE CLOUDINARY FORM DATA
+                // -------------------------------------------------
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "file",
+                    audioBlob
+                );
+
+
+                formData.append(
+                    "upload_preset",
+                    "clkt_voice"
+                );
+
+
+                // -------------------------------------------------
+                // UPLOAD AUDIO TO CLOUDINARY
+                // -------------------------------------------------
+
+                const cloudinaryResponse =
+                    await fetch(
+                        "https://api.cloudinary.com/v1_1/ewtmbwnp/auto/upload",
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+
+                const cloudinaryData =
+                    await cloudinaryResponse.json();
+
+
+                console.log(
+                    "Cloudinary response:",
+                    cloudinaryData
+                );
+
+
+                // -------------------------------------------------
+                // CHECK CLOUDINARY UPLOAD
+                // -------------------------------------------------
+
+                if (
+                    !cloudinaryResponse.ok ||
+                    !cloudinaryData.secure_url
+                ) {
+
+                    console.error(
+                        "Cloudinary upload failed:",
+                        cloudinaryData
+                    );
+
+
+                    throw new Error(
+                        cloudinaryData.error?.message ||
+                        "Cloudinary upload failed."
+                    );
+
+                }
+
+
+                const audioUrl =
+                    cloudinaryData.secure_url;
+
+
+                console.log(
+                    "Audio uploaded successfully."
+                );
+
+
+                console.log(
+                    "Audio URL:",
+                    audioUrl
+                );
+
+
+                // -------------------------------------------------
+                // SEND POST TO CLKT BACKEND
+                // -------------------------------------------------
+
+                publishVoiceButton.textContent =
+                    "Creating post...";
+
+
+                const postResponse =
+                    await fetch(
+                        "https://clkt-backend.onrender.com/api/posts",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+
+                                userId:
+                                    userId,
+
+                                type:
+                                    "voice",
+
+                                text:
+                                    "",
+
+                                audioUrl:
+                                    audioUrl
+
+                            })
+                        }
+                    );
+
+
+                const postData =
+                    await postResponse.json();
+
+
+                console.log(
+                    "CLKT backend response:",
+                    postData
+                );
+
+
+                // -------------------------------------------------
+                // CHECK BACKEND RESPONSE
+                // -------------------------------------------------
+
+                if (!postResponse.ok) {
+
+                    throw new Error(
+                        postData.message ||
+                        "Could not create the post."
+                    );
+
+                }
+
+
+                // -------------------------------------------------
+                // SUCCESS
+                // -------------------------------------------------
+
+                console.log(
+                    "Voice post created successfully."
+                );
+
+
+                alert(
+                    "Your voice post was published successfully!"
+                );
+
+
+                // -------------------------------------------------
+                // RESET RECORDER
+                // -------------------------------------------------
+
+                audioBlob = null;
+
+
+                if (audioURL) {
+
+                    URL.revokeObjectURL(
+                        audioURL
+                    );
+
+                    audioURL = null;
+
+                }
+
+
+                if (audioPreview) {
+
+                    audioPreview.innerHTML = "";
+
+                }
+
+
+                if (recordingTime) {
+
+                    recordingTime.textContent =
+                        "00:00";
+
+                }
+
+
+                if (recordingText) {
+
+                    recordingText.textContent =
+                        "Ready to record";
+
+                }
+
+
+                if (recordingDot) {
+
+                    recordingDot.style.display =
+                        "none";
+
+                }
+
+
+                publishVoiceButton.textContent =
+                    "Publish Voice";
+
+
+                publishVoiceButton.disabled =
+                    true;
+
+
+                if (startRecordingButton) {
+
+                    startRecordingButton.disabled =
+                        false;
+
+                }
+
+
+                if (stopRecordingButton) {
+
+                    stopRecordingButton.disabled =
+                        true;
+
+                }
+
+
+                // -------------------------------------------------
+                // RELOAD FEED
+                // -------------------------------------------------
+
+                loadPosts();
+
+
+            } catch (error) {
+
+                console.error(
+                    "Publish voice post error:",
+                    error
+                );
+
+
+                alert(
+                    "Something went wrong while publishing your voice post. Check the browser console for details."
+                );
+
+
+                publishVoiceButton.textContent =
+                    "Publish Voice";
+
+
+                publishVoiceButton.disabled =
+                    false;
+
+            }
 
         }
     );
@@ -711,14 +829,273 @@ if (publishVoiceButton) {
 }
 
 
-/* =========================================================
-   12. SEARCH
-   ========================================================= */
+// =====================================================
+// LOAD POSTS
+// =====================================================
+
+async function loadPosts() {
+
+    try {
+
+        console.log(
+            "Loading CLKT posts..."
+        );
+
+
+        const response =
+            await fetch(
+                "https://clkt-backend.onrender.com/api/posts"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Posts received:",
+            data
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Could not load posts."
+            );
+
+        }
+
+
+        const posts =
+            data.posts || [];
+
+
+        // -------------------------------------------------
+        // FIND FEED CONTAINER
+        // -------------------------------------------------
+
+        const feed =
+            document.getElementById("postsContainer") ||
+            document.getElementById("feed") ||
+            document.querySelector(".posts");
+
+
+        if (!feed) {
+
+            console.warn(
+                "Post feed container was not found."
+            );
+
+            return;
+
+        }
+
+
+        feed.innerHTML = "";
+
+
+        // -------------------------------------------------
+        // NO POSTS
+        // -------------------------------------------------
+
+        if (posts.length === 0) {
+
+            feed.innerHTML =
+                "<p>No posts yet.</p>";
+
+            return;
+
+        }
+
+
+        // -------------------------------------------------
+        // DISPLAY POSTS
+        // -------------------------------------------------
+
+        posts.forEach(
+            function(post) {
+
+                const postElement =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                postElement.className =
+                    "post";
+
+
+                // -------------------------------------------------
+                // USER NAME
+                // -------------------------------------------------
+
+                const name =
+                    post.user?.name ||
+                    "CLKT User";
+
+
+                const username =
+                    post.user?.username
+                        ? "@" +
+                          post.user.username
+                        : "";
+
+
+                // -------------------------------------------------
+                // CREATE POST HTML
+                // -------------------------------------------------
+
+                const userInfo =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                userInfo.className =
+                    "post-user";
+
+
+                userInfo.textContent =
+                    name +
+                    (
+                        username
+                            ? " " + username
+                            : ""
+                    );
+
+
+                postElement.appendChild(
+                    userInfo
+                );
+
+
+                // -------------------------------------------------
+                // TEXT POST
+                // -------------------------------------------------
+
+                if (
+                    post.type === "text" &&
+                    post.text
+                ) {
+
+                    const textElement =
+                        document.createElement(
+                            "p"
+                        );
+
+
+                    textElement.textContent =
+                        post.text;
+
+
+                    postElement.appendChild(
+                        textElement
+                    );
+
+                }
+
+
+                // -------------------------------------------------
+                // VOICE POST
+                // -------------------------------------------------
+
+                if (
+                    post.type === "voice" &&
+                    post.audioUrl
+                ) {
+
+                    const audio =
+                        document.createElement(
+                            "audio"
+                        );
+
+
+                    audio.controls = true;
+
+                    audio.src =
+                        post.audioUrl;
+
+                    audio.preload =
+                        "metadata";
+
+                    audio.style.width =
+                        "100%";
+
+
+                    postElement.appendChild(
+                        audio
+                    );
+
+                }
+
+
+                // -------------------------------------------------
+                // PHOTO POST
+                // -------------------------------------------------
+
+                if (
+                    post.type === "photo" &&
+                    post.imageUrl
+                ) {
+
+                    const image =
+                        document.createElement(
+                            "img"
+                        );
+
+
+                    image.src =
+                        post.imageUrl;
+
+                    image.alt =
+                        "CLKT post image";
+
+                    image.style.maxWidth =
+                        "100%";
+
+
+                    postElement.appendChild(
+                        image
+                    );
+
+                }
+
+
+                feed.appendChild(
+                    postElement
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Load posts error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD POSTS WHEN PAGE OPENS
+// =====================================================
+
+loadPosts();
+
+
+// =====================================================
+// SEARCH
+// =====================================================
 
 const searchInput =
-    document.querySelector(
-        ".search-input"
-    );
+    document.getElementById("searchInput");
 
 
 if (searchInput) {
@@ -727,31 +1104,12 @@ if (searchInput) {
         "keydown",
         function(event) {
 
-
             if (event.key === "Enter") {
 
-
-                const searchText =
-                    searchInput.value.trim();
-
-
-                if (searchText === "") {
-
-                    return;
-
-                }
-
-
                 console.log(
-                    "Searching for:",
-                    searchText
+                    "Search:",
+                    searchInput.value
                 );
-
-
-                /*
-                    Real search will eventually
-                    connect to the CLKT backend.
-                */
 
             }
 
@@ -761,17 +1119,17 @@ if (searchInput) {
 }
 
 
-/* =========================================================
-   13. NAVIGATION BUTTONS
-   ========================================================= */
+// =====================================================
+// NAVIGATION PLACEHOLDERS
+// =====================================================
 
-const navButtons =
+const navigationButtons =
     document.querySelectorAll(
-        ".nav-button"
+        "[data-page]"
     );
 
 
-navButtons.forEach(
+navigationButtons.forEach(
     function(button) {
 
         button.addEventListener(
@@ -779,7 +1137,7 @@ navButtons.forEach(
             function() {
 
                 const page =
-                    button.textContent.trim();
+                    button.dataset.page;
 
 
                 console.log(
@@ -792,106 +1150,3 @@ navButtons.forEach(
 
     }
 );
-
-
-/* =========================================================
-   14. CLEAN UP AUDIO URL
-   ========================================================= */
-
-window.addEventListener(
-    "beforeunload",
-    function() {
-
-
-        if (audioURL) {
-
-            URL.revokeObjectURL(
-                audioURL
-            );
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   CLKT JAVASCRIPT LOADED
-   ========================================================= */
-
-console.log(
-    "CLKT.com JavaScript loaded successfully."
-);
-async function loadPosts() {
-
-    const postsContainer =
-        document.getElementById("postsContainer");
-
-    if (!postsContainer) {
-        return;
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                "https://clkt-backend.onrender.com/api/posts"
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message || "Unable to load posts."
-            );
-
-        }
-
-        postsContainer.innerHTML = "";
-
-        if (
-            !data.posts ||
-            data.posts.length === 0
-        ) {
-
-            postsContainer.innerHTML =
-                "<p>No posts yet.</p>";
-
-            return;
-        }
-
-        data.posts.forEach(function(post) {
-
-            const postElement =
-                document.createElement("div");
-
-            postElement.className =
-                "post-card";
-
-            postElement.innerHTML = `
-                <h3>${post.user.name}</h3>
-                <p>@${post.user.username}</p>
-                <p>${post.text || ""}</p>
-            `;
-
-            postsContainer.appendChild(
-                postElement
-            );
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Unable to load posts:",
-            error
-        );
-
-        postsContainer.innerHTML =
-            "<p>Unable to load posts.</p>";
-    }
-}
-
-loadPosts();
